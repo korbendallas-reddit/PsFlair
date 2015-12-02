@@ -107,7 +107,7 @@ def auditFlair(comment, subname, r):
                 return
             else:
                 newFlairs.append('2000votes')
-                #update
+                updateWiki(subname, wikiPage, comment, '2000votes', r)
         #3K Wiki Edit
         elif karma > 2989 and karma < 3990:
             if '3000' in flair:
