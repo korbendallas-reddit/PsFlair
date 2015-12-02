@@ -184,7 +184,6 @@ def setFlair(user, subname, flair, r):
     return
 
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 def updateWiki(subname, wikiPage, comment, achievement, r):
 
     try:
