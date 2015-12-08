@@ -4,21 +4,22 @@ import praw, OAuth2Util, time, re, locale
 
 def Main():
 
-    subname = 'photoshopbattles'
+    #--------------subname = 'photoshopbattles'
+    subname = 'battleshop'
     username = '_korbendallas_'
     user_agent = '_korbendallas_ by /u/_korbendallas_ ver 0.1'
-    wikiPage = ''
+    wikiPage = 'flair/karma'
     interval = 30
 
 
     r = praw.Reddit(user_agent)
     o = OAuth2Util.praw.AuthenticatedReddit.login(r, disable_warning=True)
 
-    searchHotComments(subname, r)
+    searchHotComments(subname, wikiPage, r)
     
     #while True:
         
-        #searchHotComments(subname, r)
+        #searchHotComments(subname, wikiPage, r)
 
         #time.sleep(interval*60)
 
@@ -26,21 +27,38 @@ def Main():
     return
 
 
-def searchHotComments(subname, r):
-
+def searchHotComments(subname, wikiPage, r):
+    print 'auditing'
     try:
         
         sub = r.get_subreddit(subname)
-        submissions = sub.get_hot(limit=5)
+        #--------------submissions = sub.get_hot(limit=5)
+        submissions = sub.get_hot(limit=10)
 
         for submission in submissions:
-            submission.replace_more_comments(limit=None, threshold=0)
-            comments = praw.helpers.flatten_tree(submission.comments)
-            for comment in comments:
-                if comment.author:
-                    karma = int(comment.score)
-                    if karma > 990 and comment.is_root and comment.banned_by == None:
-                        auditFlair(comment, subname, r)
+            
+            try:
+                
+                submission.replace_more_comments(limit=None, threshold=0)
+                comments = praw.helpers.flatten_tree(submission.comments)
+                if comments:
+                    for comment in comments:
+
+                        try:
+                        
+                            if comment.author:
+                                karma = int(comment.score)
+                                #--------------if karma > 990 and comment.is_root and comment.banned_by == None:
+                                if karma > 0 and comment.is_root and comment.banned_by == None:
+                                    auditFlair(comment, subname, wikiPage, r)
+
+                        except (Exception) as e:
+        
+                            print e.message
+                            
+            except (Exception) as e:
+        
+                print e.message
 
     except (Exception) as e:
         
@@ -50,19 +68,23 @@ def searchHotComments(subname, r):
     return
 
 
-def auditFlair(comment, subname, r):
-
+def auditFlair(comment, subname, wikiPage, r):
+    print 'auditing flair'
     try:
 
         karma = int(comment.score)
         user = comment.author.name
         flair = getFlair(user, subname, r)
-
-        if flair == 'Error':
-            return
+        
+        if flair:
+            if flair == 'Error':
+                return
+        else:
+            flair = 'None'
         
         #Disregard Special People
         stylesheet = r.get_stylesheet(subname)
+        
         if '.author[href$="/' + user + '"]' in stylesheet:
             return
 
@@ -77,9 +99,9 @@ def auditFlair(comment, subname, r):
         t = 'thanks'
 
         #First Flair
-        if flair == 'None' or 'standard' in flair:
+        if flair == 'None' or flair == None or 'standard' in flair:
             newFlairs.append('standard')
-
+        
         #Battle Wins
         if b in flair:
             newFlairs.append(flair[flair.index(b)-1:flair.index(b)+len(b)])
@@ -93,40 +115,48 @@ def auditFlair(comment, subname, r):
         if f in flair:
             newFlairs.append(f)
 
-
+        
         #Achievements
         #1K
-        if karma < 1990:
-            if '1000' in flair or '2000' in flair or '3000' in flair:
+        #--------------if karma < 1990:
+        if karma == 1:
+            if '1000' in flair or '2000' in flair or '3000' in flair or '4000' in flair or '5000' in flair or '6000' in flair:
                 return
             else:
                 newFlairs.append('1000votes')
         #2K Wiki Edit
-        elif karma > 1989 and karma < 2990:
-            if '2000' in flair or '3000' in flair:
+        #--------------elif karma > 1989 and karma < 2990:
+        elif karma == 2:
+            if '2000' in flair or '3000' in flair or '4000' in flair or '5000' in flair or '6000' in flair:
                 return
             else:
                 newFlairs.append('2000votes')
                 updateWiki(subname, wikiPage, comment, '2000votes', r)
         #3K Wiki Edit
-        elif karma > 2989 and karma < 3990:
-            if '3000' in flair:
+        #--------------elif karma > 2989 and karma < 3990:
+        elif karma == 3:
+            if '3000' in flair or '4000' in flair or '5000' in flair or '6000' in flair:
                 return
             else:
                 newFlairs.append('3000votes')
                 updateWiki(subname, wikiPage, comment, '3000votes', r)
-        #4K+ Message Mods
-        elif karma > 3989:
-            messageBody = 'Comment with 4000+ votes: \n\n'
-            messageBody += comment.permalink
-            r.send_message('/r/' + subname, 'Manual Flair Required', messageBody)
-            return
-
+        #4K+  = Message Mods
+        #--------------elif karma > 3989:
+        elif karma > 3:
+            if '4000' in flair or '5000' in flair or '6000' in flair:
+                return
+            else:
+                messageBody = 'Comment with 4000+ votes: \n\n'
+                messageBody += comment.permalink
+                #--------------r.send_message('/r/' + subname, 'Manual Flair Required', messageBody)
+                print 'send'
+                return
+        
 
         #Thanks
         if t in flair:
             newFlairs.append(t)
-
+        
         #Format Flair Class
         newFlair = ''
         
@@ -134,16 +164,18 @@ def auditFlair(comment, subname, r):
             newFlair += element + '-'
             
         newFlair = newFlair[:len(newFlair)-1]
-
+        print newFlair
         #Wrap up
-        if '.flair-' + newFlair + '{' in stylesheet:
-            setFlair(user, subname, newFlair, r)
-        else:
-            messageBody = 'New Flair Class: \n\n'
-            messageBody += newFlair
-            messageBody += '\n\n Entry: \n\n'
-            messageBody += comment.permalink
-            r.send_message('/r/' + subname, 'Manual Flair Required', messageBody)
+        setFlair(user, subname, newFlair, r)
+        #if newFlair in stylesheet:
+            #setFlair(user, subname, newFlair, r)
+        #else:
+            #messageBody = 'New Flair Class: \n\n'
+            #messageBody += newFlair
+            #messageBody += '\n\n Entry: \n\n'
+            #messageBody += comment.permalink
+            #r.send_message('/r/' + subname, 'Manual Flair Required', messageBody)
+            #print 'send'
             
         
     except (Exception) as e:
@@ -155,10 +187,10 @@ def auditFlair(comment, subname, r):
 
 
 def getFlair(user, subname, r):
-
+    print 'get flair'
     try:
         
-        userFlair = r.get_flair(subname, username)
+        userFlair = r.get_flair(subname, user)
         return userFlair['flair_css_class']
 
     except (Exception) as e:
@@ -170,22 +202,24 @@ def getFlair(user, subname, r):
 
 
 def setFlair(user, subname, flair, r):
-
+    print 'set flair'
     try:
 
         sub = r.get_subreddit(subname)
-        sub.set_flair(username, '', flair)
+        sub.set_flair(user, '', flair)
 
     except (Exception) as e:
         
         print e.message
+
+    print 'flair updated'
         
         
     return
 
 
 def updateWiki(subname, wikiPage, comment, achievement, r):
-
+    print 'update wiki'
     try:
         
         wiki = r.get_wiki_page(subname, wikiPage)
@@ -241,6 +275,8 @@ def updateWiki(subname, wikiPage, comment, achievement, r):
         
         #Update Wiki
         wiki.edit(newWikiContents, 'Updated karma achievement.')
+
+        print 'wiki updated\r\n'
             
     except (Exception) as e:
         
