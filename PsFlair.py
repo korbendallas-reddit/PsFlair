@@ -5,7 +5,7 @@ import praw, OAuth2Util, time, re, locale
 def Main():
 
     #--------------subname = 'photoshopbattles'
-    subname = 'battleshop'
+    subname = 'battleshop'#For testing
     username = '_korbendallas_'
     user_agent = '_korbendallas_ by /u/_korbendallas_ ver 0.1'
     wikiPage = 'flair/karma'
@@ -15,13 +15,13 @@ def Main():
     r = praw.Reddit(user_agent)
     o = OAuth2Util.praw.AuthenticatedReddit.login(r, disable_warning=True)
 
-    searchHotComments(subname, wikiPage, r)
+    searchHotComments(subname, wikiPage, r)#For testing
     
-    #while True:
+    #--------------while True:
         
-        #searchHotComments(subname, wikiPage, r)
+        #--------------searchHotComments(subname, wikiPage, r)
 
-        #time.sleep(interval*60)
+        #--------------time.sleep(interval*60)
 
 
     return
@@ -33,7 +33,7 @@ def searchHotComments(subname, wikiPage, r):
         
         sub = r.get_subreddit(subname)
         #--------------submissions = sub.get_hot(limit=5)
-        submissions = sub.get_hot(limit=10)
+        submissions = sub.get_new(limit=10)#For testing
 
         for submission in submissions:
             
@@ -49,7 +49,7 @@ def searchHotComments(subname, wikiPage, r):
                             if comment.author:
                                 karma = int(comment.score)
                                 #--------------if karma > 990 and comment.is_root and comment.banned_by == None:
-                                if karma > 0 and comment.is_root and comment.banned_by == None:
+                                if karma > 0 and comment.is_root and comment.banned_by == None:#For testing
                                     auditFlair(comment, subname, wikiPage, r)
 
                         except (Exception) as e:
@@ -119,14 +119,14 @@ def auditFlair(comment, subname, wikiPage, r):
         #Achievements
         #1K
         #--------------if karma < 1990:
-        if karma == 1:
+        if karma == 1:#For testing
             if '1000' in flair or '2000' in flair or '3000' in flair or '4000' in flair or '5000' in flair or '6000' in flair:
                 return
             else:
                 newFlairs.append('1000votes')
         #2K Wiki Edit
         #--------------elif karma > 1989 and karma < 2990:
-        elif karma == 2:
+        elif karma == 2:#For testing
             if '2000' in flair or '3000' in flair or '4000' in flair or '5000' in flair or '6000' in flair:
                 return
             else:
@@ -134,7 +134,7 @@ def auditFlair(comment, subname, wikiPage, r):
                 updateWiki(subname, wikiPage, comment, '2000votes', r)
         #3K Wiki Edit
         #--------------elif karma > 2989 and karma < 3990:
-        elif karma == 3:
+        elif karma == 3:#For testing
             if '3000' in flair or '4000' in flair or '5000' in flair or '6000' in flair:
                 return
             else:
@@ -142,13 +142,14 @@ def auditFlair(comment, subname, wikiPage, r):
                 updateWiki(subname, wikiPage, comment, '3000votes', r)
         #4K+  = Message Mods
         #--------------elif karma > 3989:
-        elif karma > 3:
+        elif karma > 3:#For testing
             if '4000' in flair or '5000' in flair or '6000' in flair:
                 return
             else:
                 messageBody = 'Comment with 4000+ votes: \n\n'
                 messageBody += comment.permalink
                 #--------------r.send_message('/r/' + subname, 'Manual Flair Required', messageBody)
+                r.send_message('/r/korbendallas', 'Manual Flair Required', messageBody)
                 print 'send'
                 return
         
@@ -265,16 +266,26 @@ def updateWiki(subname, wikiPage, comment, achievement, r):
         #Sort and append rows
         firstRow = True
         for wikiRow in sorted(wikiRows, cmp=locale.strcoll):
-                if firstRow:
-                        newWikiContents += wikiRow
-                        firstRow = False
+            if firstRow:
+                newWikiContents += wikiRow
+                firstRow = False
+            else:
                 newWikiContents += '\r\n' + wikiRow
 
-        #Append footer
-        newWikiContents += footer
+        #Append footer and remove lower scoring comments by user
+        firstRow = True
+        for footerRow in footer.split('\r\n'):
+            if firstRow:
+                if comment.author.name not in footerRow:
+                    newWikiContents += footerRow
+                    firstRow = False
+            else:
+                if comment.author.name not in footerRow:
+                    newWikiContents += '\r\n' + footerRow
+
         
         #Update Wiki
-        wiki.edit(newWikiContents, 'Updated karma achievement.')
+        r.edit_wiki_page(subname, wikiPage, newWikiContents, 'Updated karma achievement.')
 
         print 'wiki updated\r\n'
             
