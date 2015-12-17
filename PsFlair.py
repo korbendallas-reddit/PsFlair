@@ -8,7 +8,7 @@ def Main():
     subname = 'battleshop'#For testing
     username = '_korbendallas_'
     user_agent = '_korbendallas_ by /u/_korbendallas_ ver 0.1'
-    wikiPage = 'flair/karma'
+    wikiPage = 'flair/karmaqueue'
     interval = 30
 
 
@@ -28,12 +28,12 @@ def Main():
 
 
 def searchHotComments(subname, wikiPage, r):
-    print 'auditing'
+    print 'auditing'#For testing
     try:
         
         sub = r.get_subreddit(subname)
         #--------------submissions = sub.get_hot(limit=5)
-        submissions = sub.get_new(limit=10)#For testing
+        submissions = sub.get_new(limit=20)#For testing
 
         for submission in submissions:
             
@@ -69,7 +69,7 @@ def searchHotComments(subname, wikiPage, r):
 
 
 def auditFlair(comment, subname, wikiPage, r):
-    print 'auditing flair'
+    print 'auditing flair'#For testing
     try:
 
         karma = int(comment.score)
@@ -131,7 +131,7 @@ def auditFlair(comment, subname, wikiPage, r):
                 return
             else:
                 newFlairs.append('2000votes')
-                updateWiki(subname, wikiPage, comment, '2000votes', r)
+                updateWiki2(subname, wikiPage, comment, '2000votes', r)
         #3K Wiki Edit
         #--------------elif karma > 2989 and karma < 3990:
         elif karma == 3:#For testing
@@ -139,7 +139,7 @@ def auditFlair(comment, subname, wikiPage, r):
                 return
             else:
                 newFlairs.append('3000votes')
-                updateWiki(subname, wikiPage, comment, '3000votes', r)
+                updateWiki2(subname, wikiPage, comment, '3000votes', r)
         #4K+  = Message Mods
         #--------------elif karma > 3989:
         elif karma > 3:#For testing
@@ -150,6 +150,7 @@ def auditFlair(comment, subname, wikiPage, r):
                 messageBody += comment.permalink
                 #--------------r.send_message('/r/' + subname, 'Manual Flair Required', messageBody)
                 r.send_message('/r/korbendallas', 'Manual Flair Required', messageBody)
+                updateWiki2(subname, wikiPage, comment, '3000votes', r)
                 print 'send'
                 return
         
@@ -165,18 +166,10 @@ def auditFlair(comment, subname, wikiPage, r):
             newFlair += element + '-'
             
         newFlair = newFlair[:len(newFlair)-1]
-        print newFlair
+        print newFlair#For testing
+        
         #Wrap up
         setFlair(user, subname, newFlair, r)
-        #if newFlair in stylesheet:
-            #setFlair(user, subname, newFlair, r)
-        #else:
-            #messageBody = 'New Flair Class: \n\n'
-            #messageBody += newFlair
-            #messageBody += '\n\n Entry: \n\n'
-            #messageBody += comment.permalink
-            #r.send_message('/r/' + subname, 'Manual Flair Required', messageBody)
-            #print 'send'
             
         
     except (Exception) as e:
@@ -188,7 +181,7 @@ def auditFlair(comment, subname, wikiPage, r):
 
 
 def getFlair(user, subname, r):
-    print 'get flair'
+    print 'get flair'#For testing
     try:
         
         userFlair = r.get_flair(subname, user)
@@ -203,7 +196,7 @@ def getFlair(user, subname, r):
 
 
 def setFlair(user, subname, flair, r):
-    print 'set flair'
+    print 'set flair'#For testing
     try:
 
         sub = r.get_subreddit(subname)
@@ -213,14 +206,14 @@ def setFlair(user, subname, flair, r):
         
         print e.message
 
-    print 'flair updated'
+    print 'flair updated'#For testing
         
         
     return
 
 
-def updateWiki(subname, wikiPage, comment, achievement, r):
-    print 'update wiki'
+def updateWiki2(subname, wikiPage, comment, achievement, r):
+    print 'update wiki'#For testing
     try:
         
         wiki = r.get_wiki_page(subname, wikiPage)
@@ -239,61 +232,40 @@ def updateWiki(subname, wikiPage, comment, achievement, r):
                 submissionTitle = str(titles[0])
                 
         except (Exception) as e:
-
+        
             print e.message
-            
+
+
         #Format into MD table row
         submissionMd = '[' + submissionTitle + '](' + comment.permalink + ')'
         submissionRow = '| ![Flair](%%' + achievement + '%%) | /u/' + comment.author.name + ' | ' + submissionMd
 
 
-        #Split wiki into three sections [everything above, relevant section, everything below]
-        #section identifier
-        sectionHeader = '######' + achievement[0] + 'k\r\n\r\n&#0160;\r\n\r\n| &#0160;&#0160;&#0160;&#0160; |   User  | Entry    |\r\n|:-----------:|:------------:|:------------:|\r\n'
-
-        #above
-        newWikiContents = wikiContents[:wikiContents.index(sectionHeader) + len(sectionHeader)]
-        #section
-        workingSectionTemp = wikiContents[wikiContents.index(sectionHeader) + len(sectionHeader):]
-        workingSection = workingSectionTemp[:workingSectionTemp.index('\r\n\r\n&#0160;')]
-        #below
-        footer = workingSectionTemp[workingSectionTemp.index('\r\n\r\n&#0160;'):]
-
-        #Split relevant section into rows and add the new row
-        wikiRows = workingSection.split('\r\n')
-        wikiRows.append(submissionRow)
-
-        #Sort and append rows
-        firstRow = True
-        for wikiRow in sorted(wikiRows, cmp=locale.strcoll):
-            if firstRow:
-                newWikiContents += wikiRow
-                firstRow = False
-            else:
-                newWikiContents += '\r\n' + wikiRow
-
-        #Append footer and remove lower scoring comments by user
-        firstRow = True
-        for footerRow in footer.split('\r\n'):
-            if firstRow:
-                if comment.author.name not in footerRow:
-                    newWikiContents += footerRow
-                    firstRow = False
-            else:
-                if comment.author.name not in footerRow:
-                    newWikiContents += '\r\n' + footerRow
+        wikiRows = []
+        
+        if '\n' in wikiContents:
+            wikiRows = wikiContents.split('\n')
+        else:
+            wikiRows.append('#Flair Queue')
 
         
-        #Update Wiki
-        r.edit_wiki_page(subname, wikiPage, newWikiContents, 'Updated karma achievement.')
+        wikiRows.append(submissionRow)
 
-        print 'wiki updated\r\n'
+        for wikiRow in wikiRows:
+
+            newWikiContents += wikiRow + '\n\n'
+
+        
+
+        wiki.edit(newWikiContents, 'New karma achievement.')   
+
+        
             
     except (Exception) as e:
         
         print e.message
 
-    
+        
     return
 
 
