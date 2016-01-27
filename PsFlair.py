@@ -1,3 +1,4 @@
+# -*- coding: cp1252 -*-
 import praw, OAuth2Util, time, re, locale
 
 
@@ -5,198 +6,198 @@ import praw, OAuth2Util, time, re, locale
 def Main():
 
     subname = 'photoshopbattles'
-    #--------------subname = 'battleshop'#For testing
     username = '_korbendallas_'
     user_agent = '_korbendallas_ by /u/_korbendallas_ ver 0.1'
-    wikiPage = 'flair/karmaqueue'
-    interval = 30#minutes between execution
+    wiki_page = 'flair/karmaqueue'
 
 
     r = praw.Reddit(user_agent)
     o = OAuth2Util.praw.AuthenticatedReddit.login(r, disable_warning=True)
 
-    searchHotComments(subname, wikiPage, r)#For testing
-    
-    #--------------while True:
-        
-        #--------------searchHotComments(subname, wikiPage, r)
+    sub = r.get_subreddit(subname)
 
-        #--------------time.sleep(interval*60)
+    #Search Hot Of Today
+    submissions = sub.get_hot(limit=20)
+    searchSubmissions(submissions, subname, wiki_page, r)
+
+
+    #Search Top Of The Week
+    #submissions = sub.get_top_from_week(limit=20)
+    #searchSubmissions(submissions, subname, wiki_page, r)
 
 
     return
 
 
-def searchHotComments(subname, wikiPage, r):
-    print 'auditing'#For testing
+def searchSubmissions(submissions, subname, wiki_page, r):
+    
+    print 'Searching Submissions'
+    
     try:
-        
-        sub = r.get_subreddit(subname)
-        submissions = sub.get_hot(limit=10)
 
         for submission in submissions:
-            print submission.permalink#For testing
+
+            print submission.title
+            print submission.short_link
+            
             try:
                 
                 submission.replace_more_comments(limit=None, threshold=0)
                 comments = praw.helpers.flatten_tree(submission.comments)
+                
                 if comments:
+                    
                     for comment in comments:
 
                         try:
                         
                             if comment.author:
+                                
                                 karma = int(comment.score)
+                                
                                 if karma > 990 and comment.is_root and comment.banned_by == None:
-                                    auditFlair(comment, subname, wikiPage, r)
+                                    auditFlair(comment, subname, wiki_page, r)
 
                         except (Exception) as e:
         
-                            print e.message
+                            print e
                             
             except (Exception) as e:
         
-                print e.message
+                print e
 
     except (Exception) as e:
         
-        print e.message
+        print e
         
         
     return
 
 
-def auditFlair(comment, subname, wikiPage, r):
-    print 'auditing flair'#For testing
+def auditFlair(comment, subname, wiki_page, r):
+    
+    print 'Auditing User Flair: ' + comment.author.name + '  ' + str(comment.score)
+    
     try:
 
         karma = int(comment.score)
         user = comment.author.name
-        flair = getFlair(user, subname, r)
-        print user,karma,flair
-        
-        if flair:
-            if flair == 'Error':
-                return
-        else:
-            flair = 'None'
-        
+
         #Disregard Special People
-        stylesheet = r.get_stylesheet(subname)
-        print str(len(stylesheet)),'stylesheet'#For testing
-        
-        if '.author[href$="/' + user + '"]' in stylesheet:
+        global special_people
+        if user in special_people:
             return
 
-        #Matrix for updated flair list
-        newFlairs = []
 
-        #Legend for shorthand
-        b = 'battles'
-        p = 'bestofpicks'
-        w = 'bestofwins'
-        f = 'featured'
-        t = 'thanks'
+        flair = getFlair(user, subname, r)
+        
+        if flair:
+            flair = flair.strip()
+            if flair == 'Error' or flair == 'none' or flair == None:
+                print 'Error getting current flair'
+                return
+            elif flair == 'None':
+                flair = ''
+            else:
+                flair = ''
+        else:
+            flair = ''
+
+
+        #Matrix for updated flair list
+        new_flairs = []
 
         #First Flair
-        if flair == 'None' or flair == None or 'standard' in flair:
-            newFlairs.append('standard')
-        
-        #Battle Wins
-        if b in flair:
-            newFlairs.append(flair[flair.index(b)-1:flair.index(b)+len(b)])
-        #Best of Picks
-        if p in flair:
-            newFlairs.append(flair[flair.index(p)-1:flair.index(p)+len(p)])
-        #Best of Wins
-        if w in flair:
-            newFlairs.append(flair[flair.index(w)-1:flair.index(w)+len(w)])
-        #Featured
-        if f in flair:
-            newFlairs.append(f)
+        if len(flair) < 1:
+            new_flairs.append('standard')
+        else:
+            for flair_item in flair.split('-'):
+                f = flair_item.strip('-').strip()
+                if 'votes' not in f and 'thanks' not in f:
+                    new_flairs.append(f)
 
         
-        #Achievements
+        #Karma Achievements
+            
         #1K
         if karma < 1990:
-        #--------------if karma == 1:#For testing
+            
             if '1000votes' in flair or '2000votes' in flair or '3000votes' in flair or '4000votes' in flair or '5000votes' in flair or '6000votes' in flair:
                 return
             else:
-                newFlairs.append('1000votes')
+                new_flairs.append('1000votes')
+                
         #2K Wiki Edit
         elif karma > 1989 and karma < 2990:
-        #--------------elif karma == 2:#For testing
+            
             if '2000votes' in flair or '3000votes' in flair or '4000votes' in flair or '5000votes' in flair or '6000votes' in flair:
                 return
             else:
-                newFlairs.append('2000votes')
-                updateWiki(subname, wikiPage, comment, '2000votes', r)
+                new_flairs.append('2000votes')
+                updateWiki(subname, wiki_page, comment, '2000votes', r)
+                
         #3K Wiki Edit
         elif karma > 2989 and karma < 3990:
-        #--------------elif karma == 3:#For testing
+            
             if '3000votes' in flair or '4000votes' in flair or '5000votes' in flair or '6000votes' in flair:
                 return
             else:
-                newFlairs.append('3000votes')
-                updateWiki(subname, wikiPage, comment, '3000votes', r)
+                new_flairs.append('3000votes')
+                updateWiki(subname, wiki_page, comment, '3000votes', r)
+                
         #4K+  = Message Mods
         elif karma > 3989:
-        #--------------elif karma > 3:#For testing
+            
             if '4000votes' in flair or '5000votes' in flair or '6000votes' in flair:
                 return
             else:
-                messageBody = 'Comment with 4000+ votes: \n\n'
-                messageBody += comment.permalink
-                #--------------r.send_message('/r/' + subname, 'Manual Flair Required', messageBody)
-                r.send_message('/r/korbendallas', 'Manual Flair Required', messageBody)
-                updateWiki(subname, wikiPage, comment, '4000votes', r)
-                print 'send'
+                message_body = 'Comment with 4000+ votes: \n\n'
+                message_body += comment.permalink
+                r.send_message('/r/korbendallas', 'Manual Flair Required', message_body)
+                updateWiki(subname, wiki_page, comment, '4000votes', r)
                 return
         
 
         #Thanks
-        if t in flair:
-            newFlairs.append(t)
-        
-        #Format Flair Class
-        newFlair = ''
-        
-        for element in newFlairs:
-            newFlair += element + '-'
+        if 'thanks' in flair:
+            new_flairs.append('thanks')
             
-        newFlair = newFlair[:len(newFlair)-1]
-        print user,comment.permalink,str(flair),'>>>>>>>>>>>>',newFlair#For testing
         
         #Wrap up
-        setFlair(user, subname, newFlair, r)
+        setFlair(user, subname, '-'.join(new_flairs), r)
+        print 'set flair for ' + user + ':  ' + flair + ' --> ' + '-'.join(new_flairs)
             
         
     except (Exception) as e:
         
-        print e.message
+        print e
 
         
     return
 
 
 def getFlair(user, subname, r):
-    print 'get flair'#For testing
+    
+    print 'Getting Flair'
+    
     try:
         
-        userFlair = r.get_flair(subname, user)
-        return userFlair['flair_css_class']
+        user_flair = r.get_flair(subname, user)
+        
+        return user_flair['flair_css_class']
 
     except (Exception) as e:
         
-        print e.message
+        print e
 
         
     return 'Error'
 
 
 def setFlair(user, subname, flair, r):
-    print 'set flair'#For testing
+    
+    print 'Setting Flair'
+    
     try:
 
         sub = r.get_subreddit(subname)
@@ -204,69 +205,85 @@ def setFlair(user, subname, flair, r):
 
     except (Exception) as e:
         
-        print e.message
-
-    print 'flair updated'#For testing
+        print e
         
         
     return
 
 
-def updateWiki(subname, wikiPage, comment, achievement, r):
-    print 'update wiki'#For testing
+def updateWiki(subname, wiki_page, comment, achievement, r):
+    
+    print 'Updating Wiki'
+    
     try:
         
-        wiki = r.get_wiki_page(subname, wikiPage)
-        wikiContents = wiki.content_md
+        wiki = r.get_wiki_page(subname, wiki_page)
+        wiki_contents = wiki.content_md
 
-        newWikiContents = ''
+        new_wiki_contents = ''
 
         #Submission Title
-        submissionTitle = 'Untitled'
+        submission_title = 'Untitled'
 
         try:
             
-            titleCollector = re.compile('\[(.*?)\]')
-            titles = titleCollector.findall(comment.body)
+            title_collector = re.compile('\[(.*?)\]')
+            titles = title_collector.findall(comment.body)
             if titles:
-                submissionTitle = str(titles[0])
+                submission_title = str(titles[0])
                 
         except (Exception) as e:
         
-            print e.message
+            print e
 
 
         #Format into MD table row
-        submissionMd = '[' + submissionTitle + '](' + comment.permalink + ')'
-        submissionRow = '| ![Flair](%%' + achievement + '%%) | /u/' + comment.author.name + ' | ' + submissionMd
+        submission_md = '[' + submission_title + '](' + comment.permalink + ')'
+        submission_row = '| ![Flair](%%' + achievement + '%%) | /u/' + comment.author.name + ' | ' + submission_md
 
 
-        wikiRows = []
+        wiki_rows = []
         
-        if '\n' in wikiContents:
-            wikiRows = wikiContents.split('\n')
+        if '\n' in wiki_contents:
+            wiki_rows = wiki_contents.split('\r\n')
         else:
-            wikiRows.append('#Flair Queue')
+            wiki_rows.append('#Flair Queue')
 
+        wiki_rows.append(submission_row)
         
-        wikiRows.append(submissionRow)
 
-        for wikiRow in wikiRows:
-
-            newWikiContents += wikiRow + '\n\n'
+        new_wiki_contents += '\r\n\r\n'.join(wiki_rows) + '\r\n\r\n'
 
         
 
-        wiki.edit(newWikiContents, 'New karma achievement.')   
+        wiki.edit(new_wiki_contents, 'New karma achievement.')
+
+        print 'Added: ' + submission_row
 
         
             
     except (Exception) as e:
         
-        print e.message
+        print e
 
         
     return
+
+
+special_people = ['2Thebreezes','8906','admancb','AlphaBoner','blue_awning','Captain_McFiesty',
+'Chispy','clintmccool','Cmatthewman','CptSasquatch','cupcake1713',
+'d_cb','Dacvak','DaminDrexil','Danirama','Deimorz',
+'dreamshoes','DrWankalot','facklestix','fatdonuthole','feith',
+'FOOKIN_LEGEND_M8','FueledByCoffee','FullNoodleFrontity','GallowBoob','give_the_lemons_back',
+'gnostic_cat','graphleek','hero0fwar','Hugojunior','JoshuaHaunted',
+'kpengin','lains-experiment','lumm0x','MahatmaGumby','milvus',
+'mocmocmoc81','MonotoneCreeper','MrFlopkins','olafpkyou','OnlyPhotoshopsPenis',
+'OrangeCladAssassin','PicturElements','pixelfuckers','PorkchopExprs','rawveggies',
+'ReeseLaserSpoon','RoyalPrinceSoldier','Shappie','Shosho99','sousvide',
+'Spankler','SplendidDevil','ssebonac','staffell','Suckassloser',
+'tacothecat','TheBlazingPhoenix','TheHongKongBong','theskabus','ThrobinWigwams',
+'totalitarian_jesus','ULTDbreadsticks','undercome','VilliThor','What_No_Cookie',
+'workingat7','zedextol']
 
 
 Main()
