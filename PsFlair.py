@@ -22,7 +22,7 @@ def Main():
 
 
     #Search Top Of The Week
-    #submissions = sub.get_top_from_week(limit=20)
+    #submissions = sub.get_top_from_month(limit=50)
     #searchSubmissions(submissions, subname, wiki_page, r)
 
 
