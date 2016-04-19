@@ -20,15 +20,15 @@ special_people = ['2Thebreezes','8906','admancb','AlphaBoner','blue_awning','Cap
     'totalitarian_jesus','ULTDbreadsticks','undercome','VilliThor','What_No_Cookie',
     'workingat7','zedextol']
 
-old_file_path = 'user_flair_list_old.csv'
-new_file_path = 'user_flair_list_new.csv'
+old_file_path = 'C:\\user_flair_list_old.csv'
+new_file_path = 'C:\\user_flair_list_new.csv'
 
 
 subname = 'photoshopbattles'
 wiki_page = 'flair/karmaqueue'
-username = 'CHANGE THIS'
-password = 'CHANGE THIS'
-user_agent = 'CHANGE THIS'
+username = 'CHANGEME'
+password = 'CHANGEME'
+user_agent = 'CHANGEME'
 
 
 def Main():
@@ -42,10 +42,10 @@ def Main():
     r = praw.Reddit(user_agent)
     r.login(username, password, disable_warning=True)
 
-    sub = r.get_subreddit(subname)
-    flairs = getFlairList(r, sub)
-    submissions = sub.get_top_from_month(limit=None)
-    searchSubmissions(r, submissions, flairs)
+    #sub = r.get_subreddit(subname)
+    #flairs = getFlairList(r, sub)
+    #submissions = sub.get_top_from_month(limit=None)
+    #searchSubmissions(r, submissions, flairs)
 
     updateFlairs(r)
 
@@ -326,10 +326,10 @@ def updateFlairs(r):
 
         for flair_row in flair_list:
             
-            flair_row = flair_row.strip('\r')
             flair_row = flair_row.strip('\n')
+            flair_row = flair_row.strip('\r')
 
-            if len(flair_row) > 2:
+            if len(flair_row) > 2 and ',' in flair_row:
 
                 if not flair_row.split(',')[1] == flair_row.split(',')[2]:
                 
